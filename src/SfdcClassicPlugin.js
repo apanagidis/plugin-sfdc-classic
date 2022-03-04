@@ -51,21 +51,23 @@ export default class SfdcClassicPlugin extends FlexPlugin {
    
     this.registerReducers(manager);
 
-    // const sfdcBaseUrl = window.location.ancestorOrigins[0];
-    // if (!isSalesForce(sfdcBaseUrl)) {
-    //   // Continue as usual
-    //   console.log('SFDC plugin: Not initializing Salesforce since this instance has been launched independently.');
-    //   return;
-    // }
+    // COMMENT THIS SECTION WHEN TESTING IN STANDALONE FLEX INSTANCE (NOT EMBEDDED IN SFDC)
+    const sfdcBaseUrl = window.location.ancestorOrigins[0];
+    if (!isSalesForce(sfdcBaseUrl)) {
+      // Continue as usual
+      console.log('SFDC plugin: Not initializing Salesforce since this instance has been launched independently.');
+      return;
+    }
 
-    // const sfApiUrl = `${sfdcBaseUrl}/support/api/53.0/interaction.js`;
+    const sfApiUrl = `${sfdcBaseUrl}/support/api/53.0/interaction.js`;
 
-    // await loadScript(sfApiUrl);
+    await loadScript(sfApiUrl);
 
-    // if (!window.sforce) {
-    //     console.log('SFDC plugin: Saleforce cannot be found');
-    //     return;
-    // }
+    if (!window.sforce) {
+        console.log('SFDC plugin: Saleforce cannot be found');
+        return;
+    }
+   ////////////////////////////////////////////////////////////////////////
     
     flex.Actions.addListener("afterAcceptTask", (payload, abortFunction) => {
         console.log("SFDC plugin: afterAcceptTask", payload);
@@ -73,12 +75,14 @@ export default class SfdcClassicPlugin extends FlexPlugin {
         // update case disposition
     });
     
+    
     flex.Actions.addListener("beforeTransferTask", async (payload, abortFunction) => {
       console.log("SFDC plugin:beforeTransferTask" , payload)
 
       const { attributes } = payload.task;
       let task = payload.task;
       const newAttributes = { ...attributes }
+
       // caseID =createSfdcCase()
       // newsfdcUrl= sfdcBaseUrl + "/"+caseID;
       newAttributes.sfdcUrl = "https://twilio-cc-dev-ed.my.salesforce.com/5005j00000H18qR";
@@ -88,6 +92,11 @@ export default class SfdcClassicPlugin extends FlexPlugin {
       disposition = "transfer";
       // update case disposition
    });
+
+   flex.Actions.addListener('beforeStartOutboundCall', async (payload) => {
+    console.log(PLUGIN_NAME, 'SFDC plugin: StartOutboundCall payload:', payload);
+    console.log(PLUGIN_NAME, 'SFDC plugin: Outbound Caller Id:', payload.callerId);
+  });
     
    
   }
