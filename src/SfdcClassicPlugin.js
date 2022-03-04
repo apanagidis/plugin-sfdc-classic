@@ -17,21 +17,25 @@ export default class SfdcClassicPlugin extends FlexPlugin {
     return window.sforce.interaction;
   }
   cases = {};
+  caseID;
 
+  async createSfdcCase(){
+   
+  }
+
+  updateCaseDisposition(disposition){
+    console.log("SFDC plugin: updating case disposition", disposition);
+  }
+ 
   logEvent(payload) {
-
-    // Examples
+    // Examples on how to leverage the OpenCTI to create a Case/Account
     // this.sfApiClassic.saveLog('Case','CaseNumber=00014706&Subject=cool&Status=Resolved');
     // this.sfApiClassic.saveLog('Account','Name=NewAccountName&Phone=4155551212');
- 
       let taskDetailsObj = {CaseNumber: '00014706','Subject':"nice",Stats:"Resolved"}
-
       const logDetails = Object.keys(taskDetailsObj)
       .map(key => `${key}=${taskDetailsObj[key]}`)
       .join('&');
-    
       this.sfApiClassic.saveLog('Case',logDetails);
-
       console.log(logDetails);
   } 
 
@@ -44,30 +48,48 @@ export default class SfdcClassicPlugin extends FlexPlugin {
    * @param manager { import('@twilio/flex-ui').Manager }
    */
   async init(flex, manager) {
+   
     this.registerReducers(manager);
-    const sfdcBaseUrl = window.location.ancestorOrigins[0];
-    if (!isSalesForce(sfdcBaseUrl)) {
-      // Continue as usual
-      console.log('Not initializing Salesforce since this instance has been launched independently.');
-      return;
-    }
 
-    const sfApiUrl = `${sfdcBaseUrl}/support/api/53.0/interaction.js`;
+    // const sfdcBaseUrl = window.location.ancestorOrigins[0];
+    // if (!isSalesForce(sfdcBaseUrl)) {
+    //   // Continue as usual
+    //   console.log('SFDC plugin: Not initializing Salesforce since this instance has been launched independently.');
+    //   return;
+    // }
 
-    await loadScript(sfApiUrl);
+    // const sfApiUrl = `${sfdcBaseUrl}/support/api/53.0/interaction.js`;
 
-    if (!window.sforce) {
-        console.log('Saleforce cannot be found');
-        return;
-    }
+    // await loadScript(sfApiUrl);
 
-    flex.Actions.addListener("afterHangupCall", (payload, abortFunction) => {
-        this.logEvent(payload);
-  });
-
-    flex.Actions.addListener("afterCompleteTask", (payload, abortFunction) => {
-      this.logEvent(payload); 
+    // if (!window.sforce) {
+    //     console.log('SFDC plugin: Saleforce cannot be found');
+    //     return;
+    // }
+    
+    flex.Actions.addListener("afterAcceptTask", (payload, abortFunction) => {
+        console.log("SFDC plugin: afterAcceptTask", payload);
+        disposition = "call answered";
+        // update case disposition
     });
+    
+    flex.Actions.addListener("beforeTransferTask", async (payload, abortFunction) => {
+      console.log("SFDC plugin:beforeTransferTask" , payload)
+
+      const { attributes } = payload.task;
+      let task = payload.task;
+      const newAttributes = { ...attributes }
+      // caseID =createSfdcCase()
+      // newsfdcUrl= sfdcBaseUrl + "/"+caseID;
+      newAttributes.sfdcUrl = "https://twilio-cc-dev-ed.my.salesforce.com/5005j00000H18qR";
+      
+      // Updating task attributes with the new SFDC URL
+      await task.setAttributes(newAttributes);
+      disposition = "transfer";
+      // update case disposition
+   });
+    
+   
   }
 
   /**
