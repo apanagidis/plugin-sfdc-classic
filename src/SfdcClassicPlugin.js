@@ -93,11 +93,43 @@ export default class SfdcClassicPlugin extends FlexPlugin {
       // update case disposition
    });
 
+   flex.Actions.addListener("afterTransferTask", async (payload, abortFunction) => {
+     console.log("SFDC plugin:afterTransferTask" , Date.now(), payload)
+
+    });
 
    flex.Actions.addListener('beforeStartOutboundCall', async (payload) => {
-    console.log(PLUGIN_NAME, 'SFDC plugin: StartOutboundCall payload:', payload);
-    console.log(PLUGIN_NAME, 'SFDC plugin: Outbound Caller Id:', payload.callerId);
+    console.log(PLUGIN_NAME, 'SFDC plugin: StartOutboundCall payload:');
   });
+
+
+    let currentReservation;
+    let isVoice;
+    manager.workerClient.on('reservationCreated',async reservation => {
+      isVoice = reservation.task.taskChannelUniqueName === 'voice';
+      if(isVoice){
+        currentReservation = reservation;
+        console.log("SFDC plugin: ", currentReservation);
+        if(currentReservation) {
+          !('conversations' in currentReservation.task.attributes) && (currentReservation.task.attributes.conversations = {});
+          if(currentReservation.task.attributes.conversations.hang_up_by === undefined){
+              currentReservation.task.attributes.conversations.hang_up_by = 'Customer';
+              await currentReservation.task.setAttributes(currentReservation.task.attributes);
+          }
+          currentReservation = null;
+        }
+      }
+    });
+          
+    flex.Actions.addListener("afterHangupCall", async (payload) => {
+      if(isVoice && !payload.task?.outgoingTransferObject){
+        console.log("SFDC plugin: afterHangupCall ",payload.task, payload.task.outgoingTransferObject);
+        !('conversations' in payload.task.attributes) && (payload.task.attributes.conversations = {});
+        payload.task.attributes.conversations.hang_up_by = 'Agent';
+        await payload.task.setAttributes(payload.task.attributes);
+        currentReservation = null;
+      }
+    });
     
    
   }
