@@ -130,6 +130,14 @@ export default class SfdcClassicPlugin extends FlexPlugin {
         currentReservation = null;
       }
     });
+
+
+    flex.Notifications.addListener("beforeAddNotification", (payload) => {
+      console.log("SFDC plugin: notification capture", payload);
+      console.log("SFDC plugin: notification capture", payload?.id === "TransferFailed");
+      // Worker does not have capacity, delete the case that was created in beforeTransferTask
+
+    });
     
    
   }
