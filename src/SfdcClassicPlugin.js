@@ -1,6 +1,6 @@
 import React from 'react';
 import { VERSION } from '@twilio/flex-ui';
-import { FlexPlugin } from 'flex-plugin';
+import { FlexPlugin } from '@twilio/flex-plugin';
 import { isSalesForce } from './helpers/salesforce';
 import { loadScript } from './helpers/load-script';
 
@@ -99,6 +99,9 @@ export default class SfdcClassicPlugin extends FlexPlugin {
     });
 
    flex.Actions.addListener('beforeStartOutboundCall', async (payload) => {
+     if(payload?.isClickToDial){
+       console.log("The call was started from Salesforce");
+     }
     console.log(PLUGIN_NAME, 'SFDC plugin: StartOutboundCall payload:');
   });
 
@@ -133,11 +136,20 @@ export default class SfdcClassicPlugin extends FlexPlugin {
 
 
     flex.Notifications.addListener("beforeAddNotification", (payload) => {
-      console.log("SFDC plugin: notification capture", payload);
-      console.log("SFDC plugin: notification capture", payload?.id === "TransferFailed");
+
       // Worker does not have capacity, delete the case that was created in beforeTransferTask
+      console.log("SFDC plugin: notification capture", payload?.id === "TransferFailed");
+
+      // Failed outbound call. Todo, delete the case that was previosuly created. 
+      const notifys = ["OutboundCallCanceledGeneric", "OutboundCallCanceledInvalidNumber", "OutboundCallCanceledNoAnswer","OutboundCallCanceledBusy"];
+      if(notifys.includes(payload.id))
+      { 
+      }
 
     });
+
+
+
     
    
   }
